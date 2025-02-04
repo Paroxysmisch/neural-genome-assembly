@@ -1,0 +1,6 @@
+-f https://download.pytorch.org/whl/cu126
+torch
+torchvision
+torchaudio
+mamba-ssm
+einops

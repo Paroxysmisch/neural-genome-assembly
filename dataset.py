@@ -79,7 +79,9 @@ class GenomeDataset(Dataset):
         return sample
 
 
-genome_dataset = GenomeDataset(Genome.CHM13, 19)
-sample = genome_dataset[1]
-reads = sample["reads"][sample["target"]]
-print(reads[0, -25:] == reads[1, :25])
+# genome_dataset = GenomeDataset(Genome.CHM13, 19)
+# sample = genome_dataset[1]
+# reads = sample["reads"][sample["target"]]
+# print(sample["reads"][:5])
+# print(sample["target"][:5])
+# print(reads[0, -25:] == reads[1, :25])

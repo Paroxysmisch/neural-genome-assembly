@@ -4,3 +4,4 @@ torchvision
 torchaudio
 mamba-ssm
 einops
+lightning

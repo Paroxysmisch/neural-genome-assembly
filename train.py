@@ -4,7 +4,7 @@ from lightning.pytorch.loggers import TensorBoardLogger
 from torch.utils.data import DataLoader
 
 from dataset import *
-from lightning_modules import TrainingModule
+from lightning_modules import TrainingModule, FusedTrainingModule
 
 seed_everything(42, workers=True)
 
@@ -15,9 +15,10 @@ train_loader = DataLoader(
     collate_fn=lambda single_graph_in_list: single_graph_in_list[0],
     num_workers=16,
 )
-model = TrainingModule()
+# model = TrainingModule()
+model = FusedTrainingModule()
 
-logger = TensorBoardLogger(save_dir="tb_logs", name="real_run_shuffled")
+logger = TensorBoardLogger(save_dir="tb_logs", name="fused")
 trainer = L.Trainer(
     max_epochs=100, log_every_n_steps=1, deterministic=True, logger=logger
 )

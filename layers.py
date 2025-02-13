@@ -49,3 +49,31 @@ class MambaDecoder(nn.Module):
         # breakpoint()
         # attention_scores = nn.Softmax(dim=-1)(attention_scores)
         return attention_scores
+
+
+class MambaEncoderDecoder(nn.Module):
+    def __init__(self, d_model=64, d_state=64, d_conv=4, expand=2):
+        super().__init__()
+        self.expander = nn.Linear(4, d_model)
+        self.reads_encoder = Mamba(
+            d_model=d_model, d_state=d_state, d_conv=d_conv, expand=expand
+        )
+        # d_conv set to 1 to prevent Mamba from cheating by looking at future tokens
+        self.query_project = nn.Linear(d_model * 2, d_model)
+        self.key_project = nn.Linear(d_model * 2, d_model)
+
+    def forward(self, reads, sequenced_reads_indices):
+        reads = self.expander(reads)
+        encoded = self.reads_encoder(reads)
+        mean_pooled = reduce(encoded, "b l d_model -> b d_model", "mean")
+        max_pooled = reduce(encoded, "b l d_model -> b d_model", "max")
+        last_pooled = encoded[:, -1, :]
+        encoded = rearrange(
+            [mean_pooled, last_pooled], "type b d_model -> b (type d_model)"
+        )
+
+        sequenced_reads = encoded[sequenced_reads_indices]
+        queries = self.query_project(sequenced_reads)
+        keys = self.key_project(encoded)
+        attention_scores = torch.einsum("nd,md->nm", queries, keys)
+        return attention_scores

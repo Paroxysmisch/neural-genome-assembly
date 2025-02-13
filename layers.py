@@ -52,7 +52,7 @@ class MambaDecoder(nn.Module):
 
 
 class MambaEncoderDecoder(nn.Module):
-    def __init__(self, d_model=64, d_state=64, d_conv=4, expand=2):
+    def __init__(self, d_model=64, num_heads=4, d_state=64, d_conv=4, expand=2):
         super().__init__()
         self.expander = nn.Linear(4, d_model)
         self.reads_encoder = Mamba(
@@ -61,6 +61,10 @@ class MambaEncoderDecoder(nn.Module):
         # d_conv set to 1 to prevent Mamba from cheating by looking at future tokens
         self.query_project = nn.Linear(d_model * 2, d_model)
         self.key_project = nn.Linear(d_model * 2, d_model)
+        assert d_model % num_heads == 0, "d_model should be divisible by num_heads."
+        self.num_heads = num_heads
+        self.ReLU = torch.nn.ReLU()
+        self.mix_head_info = nn.Linear(num_heads, num_heads)
 
     def forward(self, reads, sequenced_reads_indices):
         reads = self.expander(reads)
@@ -74,6 +78,11 @@ class MambaEncoderDecoder(nn.Module):
 
         sequenced_reads = encoded[sequenced_reads_indices]
         queries = self.query_project(sequenced_reads)
+        queries = rearrange(queries, "q (h d) -> h q d", h=self.num_heads)
         keys = self.key_project(encoded)
-        attention_scores = torch.einsum("nd,md->nm", queries, keys)
+        keys = rearrange(keys, "k (h d) -> h k d", h=self.num_heads)
+        attention_scores = torch.einsum("hqd,hkd->qkh", queries, keys)
+        attention_scores = self.ReLU(attention_scores)
+        attention_scores = self.mix_head_info(attention_scores)
+        attention_scores = reduce(attention_scores, "q k h -> q k", "max")
         return attention_scores

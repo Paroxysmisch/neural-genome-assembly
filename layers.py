@@ -52,12 +52,19 @@ class MambaDecoder(nn.Module):
 
 
 class MambaEncoderDecoder(nn.Module):
-    def __init__(self, d_model=64, num_heads=4, d_state=64, d_conv=4, expand=2):
+    def __init__(
+        self, d_model=64, num_heads=4, d_state=64, d_conv=4, expand=2, num_mamba_stack=3
+    ):
         super().__init__()
         self.expander = nn.Linear(4, d_model)
-        self.reads_encoder = Mamba(
-            d_model=d_model, d_state=d_state, d_conv=d_conv, expand=expand
-        )
+        mamba_layers = []
+        for _ in range(num_mamba_stack):
+            mamba_layers += [
+                Mamba(d_model=d_model, d_state=d_state, d_conv=d_conv, expand=expand),
+                nn.LayerNorm(d_model),
+                nn.ReLU(),
+            ]
+        self.reads_encoder = nn.Sequential(*mamba_layers)
         # d_conv set to 1 to prevent Mamba from cheating by looking at future tokens
         self.query_project = nn.Linear(d_model * 2, d_model)
         self.key_project = nn.Linear(d_model * 2, d_model)

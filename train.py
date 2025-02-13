@@ -18,7 +18,7 @@ train_loader = DataLoader(
 # model = TrainingModule()
 model = FusedTrainingModule()
 
-logger = TensorBoardLogger(save_dir="tb_logs", name="fused_multi_head")
+logger = TensorBoardLogger(save_dir="tb_logs", name="fused_multi_head_3_mamba")
 trainer = L.Trainer(
     max_epochs=100, log_every_n_steps=1, deterministic=True, logger=logger
 )

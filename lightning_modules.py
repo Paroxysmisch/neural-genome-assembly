@@ -17,8 +17,8 @@ class TrainingModule(L.LightningModule):
         encoded = self.encoder(batch["reads"])
         decoded = self.decoder(encoded, batch["reads"][batch["target"]][:-1])
         one_hot_target = torch.nn.functional.one_hot(batch["target"])
-        # loss = self.loss(decoded, one_hot_target[1:].float())
-        loss = self.loss(decoded, one_hot_target[:-1].float())
+        loss = self.loss(decoded, one_hot_target[1:].float())
+        # loss = self.loss(decoded, one_hot_target[:-1].float())
 
         self.log("train_loss", loss, prog_bar=True)
         return loss

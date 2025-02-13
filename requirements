@@ -5,3 +5,4 @@ torchaudio
 mamba-ssm
 einops
 lightning
+tensorboard

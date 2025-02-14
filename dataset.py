@@ -16,7 +16,7 @@ class GenomeDataset(Dataset):
         chromosome: int,
         seq_len: int = 10000,
         read_len: int = 100,
-        read_overlap_len=25,
+        read_overlap_len: int | None = 25,
         transform=None,
     ):
         self.read_len = read_len
@@ -55,23 +55,37 @@ class GenomeDataset(Dataset):
             idx = idx.tolist()
 
         complete_sequence = self.data[idx]
-        reads = complete_sequence.unfold(
-            dimension=0,
-            size=self.read_len,
-            step=self.read_len - self.read_overlap_len,
-        )[
-            :-1
-        ]  # drop the final read in case the complete seq_len is not divisible by the number of windows produced
-        reads = rearrange(
-            reads, "num_reads features read_length -> num_reads read_length features"
-        )
+        start_indices = None
+        if not self.read_overlap_len:
+            start_indices = torch.randint(
+                0,
+                len(complete_sequence) - self.read_len + 1,
+                ((len(complete_sequence) // self.read_len) * 3,),
+            )
+            start_indices, _ = torch.sort(start_indices)
+            indices = start_indices[:, None] + torch.arange(self.read_len)
+            reads = complete_sequence[indices]
+        else:
+            reads = complete_sequence.unfold(
+                dimension=0,
+                size=self.read_len,
+                step=self.read_len - self.read_overlap_len,
+            )[
+                :-1
+            ]  # drop the final read in case the complete seq_len is not divisible by the number of windows produced
+            reads = rearrange(
+                reads,
+                "num_reads features read_length -> num_reads read_length features",
+            )
         random_permutation = torch.randperm(len(reads))
         random_permutation_inverse = torch.argsort(random_permutation)
 
         sample = {
             "reads": reads[random_permutation],
             "target": random_permutation_inverse,
+            "start_indices": start_indices,
         }
+
 
         if self.transform:
             sample = self.transform(sample)

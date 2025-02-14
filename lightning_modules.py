@@ -39,14 +39,20 @@ class FusedTrainingModule(L.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         self.encoder_decoder = MambaEncoderDecoder()
-        self.loss = torch.nn.BCEWithLogitsLoss()
+        self.loss = torch.nn.CrossEntropyLoss()
 
     def training_step(self, batch, batch_idx):
         attention_scores = self.encoder_decoder(batch["reads"], batch["target"][:-1])
-        one_hot_target = torch.nn.functional.one_hot(batch["target"])
-        loss = self.loss(attention_scores, one_hot_target[1:].float())
+        loss = self.loss(attention_scores, batch["target"][1:])
 
         self.log("train_loss", loss, prog_bar=True)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        attention_scores = self.encoder_decoder(batch["reads"], batch["target"][:-1])
+        loss = self.loss(attention_scores, batch["target"][1:])
+
+        self.log("validation_loss", loss, prog_bar=True)
         return loss
 
     def forward(self, batch):

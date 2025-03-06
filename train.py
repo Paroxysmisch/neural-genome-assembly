@@ -1,7 +1,7 @@
 import lightning as L
 from lightning.pytorch import seed_everything
 from lightning.pytorch.loggers import TensorBoardLogger
-from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
+from lightning.pytorch.callbacks import ModelCheckpoint
 from torch.utils.data import DataLoader
 
 from dataset import *
@@ -10,14 +10,14 @@ from lightning_modules import FusedTrainingModule, TrainingModule
 seed_everything(42, workers=True)
 
 train_loader = DataLoader(
-    GenomeDataset(Genome.CHM13, 19),
+    GenomeDataset(Genome.CHM13, 19, read_overlap_len=None),
     batch_size=1,
     shuffle=True,
     collate_fn=lambda single_graph_in_list: single_graph_in_list[0],
     num_workers=8,
 )
 val_loader = DataLoader(
-    GenomeDataset(Genome.CHM13, 18),
+    GenomeDataset(Genome.CHM13, 18, read_overlap_len=None),
     batch_size=1,
     shuffle=True,
     collate_fn=lambda single_graph_in_list: single_graph_in_list[0],
@@ -33,7 +33,7 @@ checkpoint_callback = ModelCheckpoint(
     filename="epoch{epoch}-validation_loss{validation_loss:.2f}",
     save_last=True,
 )
-logger = TensorBoardLogger(save_dir="tb_logs", name="cross_entropy_loss")
+logger = TensorBoardLogger(save_dir="tb_logs", name="random_read_starts")
 trainer = L.Trainer(
     max_epochs=100,
     log_every_n_steps=1,

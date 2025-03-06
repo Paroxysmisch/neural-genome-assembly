@@ -65,6 +65,7 @@ class MambaEncoderDecoder(nn.Module):
                 nn.ReLU(),
             ]
         self.reads_encoder = nn.Sequential(*mamba_layers)
+        self.reads_decoder = Mamba(d_model=d_model * 2, d_state=d_state, d_conv=1, expand=expand)
         # d_conv set to 1 to prevent Mamba from cheating by looking at future tokens
         self.query_project = nn.Linear(d_model * 2, d_model)
         self.key_project = nn.Linear(d_model * 2, d_model)
@@ -84,6 +85,7 @@ class MambaEncoderDecoder(nn.Module):
         )
 
         sequenced_reads = encoded[sequenced_reads_indices]
+        sequenced_reads = self.reads_decoder(sequenced_reads.unsqueeze(0)).squeeze(0)
         queries = self.query_project(sequenced_reads)
         queries = rearrange(queries, "q (h d) -> h q d", h=self.num_heads)
         keys = self.key_project(encoded)

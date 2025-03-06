@@ -13,7 +13,7 @@ model = FusedTrainingModule.load_from_checkpoint(
     # "lightning_logs/version_19/checkpoints/epoch=49-step=50000.ckpt",
     # "tb_logs/real_run_shuffled/version_0/checkpoints/epoch=99-step=100000.ckpt",
     # "tb_logs/fused_multi_head_3_mamba/version_1/checkpoints/epoch=99-step=100000.ckpt",
-    "tb_logs/randomized_read_starts/version_0/checkpoints/epoch=99-step=100000.ckpt"
+    "tb_logs/random_read_starts/version_3/checkpoints/last.ckpt"
 ).to("cuda")
 
 result = model.forward(sample)

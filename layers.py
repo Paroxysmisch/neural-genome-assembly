@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from einops import rearrange, reduce
+from einops import rearrange, reduce, repeat
 from mamba_ssm import Mamba
 
 
@@ -72,9 +72,10 @@ class MambaEncoderDecoder(nn.Module):
         assert d_model % num_heads == 0, "d_model should be divisible by num_heads."
         self.num_heads = num_heads
         self.ReLU = torch.nn.ReLU()
-        self.mix_head_info = nn.Linear(num_heads, num_heads)
+        self.mix_head_info_1 = nn.Linear(num_heads + 1, num_heads + 1)
+        self.mix_head_info_2 = nn.Linear(num_heads + 1, num_heads + 1)
 
-    def forward(self, reads, sequenced_reads_indices):
+    def forward(self, reads, sequenced_reads_indices, overlap_lens):
         reads = self.expander(reads)
         encoded = self.reads_encoder(reads)
         mean_pooled = reduce(encoded, "b l d_model -> b d_model", "mean")
@@ -91,7 +92,12 @@ class MambaEncoderDecoder(nn.Module):
         keys = self.key_project(encoded)
         keys = rearrange(keys, "k (h d) -> h k d", h=self.num_heads)
         attention_scores = torch.einsum("hqd,hkd->qkh", queries, keys)
-        attention_scores = self.ReLU(attention_scores)
-        attention_scores = self.mix_head_info(attention_scores)
-        attention_scores = reduce(attention_scores, "q k h -> q k", "max")
+        # Undo just the row permutation on overlap_lens to match the sequenced_reads
+        overlap_info = overlap_lens[sequenced_reads_indices]
+        overlap_info = repeat(overlap_info, "q k -> q k 1")
+        # Add overlap information as another head
+        attention_scores = torch.cat([attention_scores, overlap_info], dim=-1)
+        attention_scores = self.ReLU(self.mix_head_info_1(attention_scores))
+        attention_scores = self.mix_head_info_2(attention_scores)
+        attention_scores = reduce(attention_scores, "q k h -> q k", "mean")
         return attention_scores

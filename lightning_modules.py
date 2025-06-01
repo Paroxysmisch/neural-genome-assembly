@@ -42,21 +42,27 @@ class FusedTrainingModule(L.LightningModule):
         self.loss = torch.nn.CrossEntropyLoss()
 
     def training_step(self, batch, batch_idx):
-        attention_scores = self.encoder_decoder(batch["reads"], batch["target"][:-1])
+        overlap_lens = batch["overlap_lens"].float()
+        overlap_lens = overlap_lens / torch.max(overlap_lens, dim=-1)[0].unsqueeze(-1)
+        attention_scores = self.encoder_decoder(batch["reads"], batch["target"][:-1], overlap_lens)
         loss = self.loss(attention_scores, batch["target"][1:])
 
         self.log("train_loss", loss, prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        attention_scores = self.encoder_decoder(batch["reads"], batch["target"][:-1])
+        overlap_lens = batch["overlap_lens"].float()
+        overlap_lens = overlap_lens / torch.max(overlap_lens, dim=-1)[0].unsqueeze(-1)
+        attention_scores = self.encoder_decoder(batch["reads"], batch["target"][:-1], overlap_lens)
         loss = self.loss(attention_scores, batch["target"][1:])
 
         self.log("validation_loss", loss, prog_bar=True)
         return loss
 
     def forward(self, batch):
-        attention_scores = self.encoder_decoder(batch["reads"], batch["target"][:-1])
+        overlap_lens = batch["overlap_lens"].float()
+        overlap_lens = overlap_lens / torch.max(overlap_lens, dim=-1)[0].unsqueeze(-1)
+        attention_scores = self.encoder_decoder(batch["reads"], batch["target"][:-1], overlap_lens)
         return attention_scores
 
     def configure_optimizers(self):

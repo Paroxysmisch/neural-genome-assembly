@@ -56,6 +56,7 @@ class GenomeDataset(Dataset):
 
         complete_sequence = self.data[idx]
         start_indices = None
+        overlap_lens = None
         if not self.read_overlap_len:
             start_indices = torch.randint(
                 0,
@@ -65,6 +66,16 @@ class GenomeDataset(Dataset):
             start_indices, _ = torch.sort(start_indices)
             indices = start_indices[:, None] + torch.arange(self.read_len)
             reads = complete_sequence[indices]
+
+            # calculate overlap lengths
+            end_indices = start_indices + self.read_len
+            starts_i = rearrange(start_indices, "num_reads -> 1 num_reads")
+            starts_j = rearrange(start_indices, "num_reads -> num_reads 1")
+            ends_i = rearrange(end_indices, "num_reads -> 1 num_reads")
+            ends_j = rearrange(end_indices, "num_reads -> num_reads 1")
+
+            # Compute overlap matrix using broadcasting
+            overlap_lens = torch.clamp(torch.min(ends_i, ends_j) - torch.max(starts_i, starts_j), min=0)
         else:
             reads = complete_sequence.unfold(
                 dimension=0,
@@ -84,6 +95,7 @@ class GenomeDataset(Dataset):
             "reads": reads[random_permutation],
             "target": random_permutation_inverse,
             "start_indices": start_indices,
+            "overlap_lens": overlap_lens[random_permutation, :][:, random_permutation],
         }
 
 
@@ -93,9 +105,10 @@ class GenomeDataset(Dataset):
         return sample
 
 
-# genome_dataset = GenomeDataset(Genome.CHM13, 19)
+# genome_dataset = GenomeDataset(Genome.CHM13, 19, read_overlap_len=None)
 # sample = genome_dataset[1]
 # reads = sample["reads"][sample["target"]]
+# breakpoint()
 # print(sample["reads"][:5])
 # print(sample["target"][:5])
 # print(reads[0, -25:] == reads[1, :25])

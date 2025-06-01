@@ -33,7 +33,7 @@ checkpoint_callback = ModelCheckpoint(
     filename="epoch{epoch}-validation_loss{validation_loss:.2f}",
     save_last=True,
 )
-logger = TensorBoardLogger(save_dir="tb_logs", name="random_read_starts")
+logger = TensorBoardLogger(save_dir="tb_logs", name="overlap_info_mlp")
 trainer = L.Trainer(
     max_epochs=100,
     log_every_n_steps=1,

@@ -6,3 +6,4 @@ mamba-ssm
 einops
 lightning
 tensorboard
+wandb

@@ -15,8 +15,8 @@ class GenomeDataset(Dataset):
         genome: Genome,
         chromosome: int,
         seq_len: int = 10000,
-        read_len: int = 100,
-        read_overlap_len: int | None = 25,
+        read_len: int = 1000,
+        read_overlap_len: int | None = 250,
         transform=None,
     ):
         self.read_len = read_len

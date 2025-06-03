@@ -2,7 +2,7 @@ import lightning as L
 import torch
 from torch.optim.adam import Adam
 
-from layers import MambaDecoder, MambaEncoder, MambaEncoderDecoder
+from layers import MambaDecoder, MambaEncoder, MambaEncoderDecoder, TransformerEncoderDecoder
 
 
 class TrainingModule(L.LightningModule):
@@ -35,10 +35,11 @@ class TrainingModule(L.LightningModule):
 
 
 class FusedTrainingModule(L.LightningModule):
-    def __init__(self):
+    def __init__(self, encoded_decoder=TransformerEncoderDecoder):
         super().__init__()
         self.save_hyperparameters()
-        self.encoder_decoder = MambaEncoderDecoder()
+        # self.encoder_decoder = MambaEncoderDecoder()
+        self.encoder_decoder = encoded_decoder()
         self.loss = torch.nn.CrossEntropyLoss()
 
     def training_step(self, batch, batch_idx):

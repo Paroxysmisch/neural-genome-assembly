@@ -121,8 +121,15 @@ class TransformerEncoderDecoder(nn.Module):
             )
         ]
         self.reads_encoder = nn.Sequential(*mamba_layers)
-        self.reads_decoder = Mamba(
-            d_model=d_model * 2, d_state=d_state, d_conv=1, expand=expand
+        # self.reads_decoder = Mamba(
+        #     d_model=d_model * 2, d_state=d_state, d_conv=1, expand=expand
+        # )
+        self.reads_decoder = nn.TransformerEncoder(
+            encoder_layer=nn.TransformerEncoderLayer(
+                d_model=d_model * 2, nhead=num_heads, batch_first=True
+            ),
+            num_layers=2,
+            norm=nn.LayerNorm(d_model * 2),
         )
         # d_conv set to 1 to prevent Mamba from cheating by looking at future tokens
         self.query_project = nn.Linear(d_model * 2, d_model)

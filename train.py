@@ -15,21 +15,22 @@ def run(seed):
     seed_everything(seed, workers=True)
 
     train_loader = DataLoader(
-        GenomeDataset(Genome.CHM13, 19, read_overlap_len=None),
+        GenomeDataset(Genome.CHM13, 15, read_overlap_len=None),
         batch_size=1,
         shuffle=True,
         collate_fn=lambda single_graph_in_list: single_graph_in_list[0],
         num_workers=8,
     )
     val_loader = DataLoader(
-        GenomeDataset(Genome.CHM13, 18, read_overlap_len=None),
+        GenomeDataset(Genome.CHM13, 22, read_overlap_len=None),
         batch_size=1,
         shuffle=False,
         collate_fn=lambda single_graph_in_list: single_graph_in_list[0],
         num_workers=8,
     )
     # model = TrainingModule()
-    model = FusedTrainingModule(encoded_decoder=MambaEncoderDecoder)
+    model = FusedTrainingModule()
+    # model = FusedTrainingModule(encoded_decoder=MambaEncoderDecoder)
 
     checkpoint_callback = ModelCheckpoint(
         monitor="validation_loss",
@@ -49,7 +50,7 @@ def run(seed):
         log_every_n_steps=1,
         deterministic=True,
         logger=logger,
-        check_val_every_n_epoch=5,
+        check_val_every_n_epoch=1,
         callbacks=[checkpoint_callback],
     )
     trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
